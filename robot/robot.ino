@@ -518,7 +518,7 @@ void runn() {
         //reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
         state = moving_to_hall;
       } else {
-        if (timer == 190) reportDestination(String(rooms[numberOfOrders - (numberOfOrdersLeft + 1)]));
+        if (timer == 190) reportDestination(String(rooms[numberOfOrders - (numberOfOrdersLeft - 1)]));
         state = waiting;
       }
       break;
