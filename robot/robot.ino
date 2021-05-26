@@ -463,7 +463,7 @@ void readOrders() {
               numberOfOrders = number;
               numberOfOrdersLeft = numberOfOrders;
             } else {
-              rooms[count - 1] = number;
+              rooms[numberOfOrders - count] = number;
             }
             pos = i + 1;
             count += 1;
@@ -472,8 +472,8 @@ void readOrders() {
         }
       }
     }
-    replyToCommand();
-    Serial.print(data);
+    //replyToCommand();
+    //Serial.print(data);
   }
 }
 
@@ -488,9 +488,10 @@ void runn() {
         //numberOfOrdersLeft = numberOfOrders;
         turnsForEachRoom[0] = rooms[0];
         for (int i = 1; i < numberOfOrders; i++) turnsForEachRoom[i] = rooms[i] - rooms[i-1];
+        rooms[numberOfOrders] = 0;
         countTurns = 0;
         delay(1000);
-        reportDestination(String(rooms[0]));
+        //reportDestination(String(rooms[0]));
         state = moving_to_room;
       }
       break;
@@ -507,16 +508,17 @@ void runn() {
     case waiting: 
       delay(100);
       timer++;
-      if (timer == 20) {
+      if (timer == 200) {
         timer = 0;
         while (!ir[3]) {
           robotTurnLeft(force, force, force, force);
           readIR();
         }
         robotStop();
-        reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
+        //reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
         state = moving_to_hall;
       } else {
+        if (timer == 190) reportDestination(String(rooms[numberOfOrders - (numberOfOrdersLeft + 1)]));
         state = waiting;
       }
       break;
@@ -560,6 +562,7 @@ void runn() {
           readIR();
         }
         robotStop();
+        replyToCommand();
         state = idle;
       } else {
         robotMovingToGarage();
