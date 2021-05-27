@@ -43,9 +43,9 @@ int numberOfOrdersLeft = 0;
 int countTurns = 0;
 
 boolean ir[5] = {0, 0, 0, 0, 0};
-int rooms[6] = {1, 2, 3, 4, 5, 6};
-int turnsForEachRoom[6] = {0, 0, 0, 0, 0, 0};
-boolean isStop = false;
+int rooms[7] = {1, 3, 6, 4, 5, 6, 7};
+int turnsForEachRoom[7] = {0, 0, 0, 0, 0, 0, 0};
+boolean isStop = false, isRoom = false, isTurn = false;
 
 #define MAX_SPEED 255 //từ 0-255
 #define MIN_SPEED 0
@@ -62,7 +62,7 @@ void setup()
   pinMode(IN2_front, OUTPUT);
   pinMode(IN3_front, OUTPUT);
   pinMode(IN4_front, OUTPUT);
-  numberOfOrders = 0;
+  numberOfOrders = 3;
   numberOfOrdersLeft = 0;
   mySerial.begin(115200);
 }
@@ -215,7 +215,7 @@ void robotTurnRight_90_degree(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -229,7 +229,7 @@ void robotTurnRight_90_degree(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -244,7 +244,7 @@ void robotTurnLeft_90_degree(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -253,7 +253,7 @@ void robotTurnLeft_90_degree(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -262,7 +262,7 @@ void robotTurnLeft_90_degree(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -275,7 +275,7 @@ void robotTurnLeft_90_degree_to_hall(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -284,37 +284,29 @@ void robotTurnLeft_90_degree_to_hall(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
-//  while (!ir[1]) {
-//    robotTurnRight(force, force, force, force);
-//    readIR();
-//    if (isStop) {
-//      robotStop();
-//      return;
-//    }
-//  }
-//  robotStop();
   while (!ir[2]) {
     frontRight(force, force, force, force);
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
 }
 
 void robotTurnRight_90_degree_to_hall(int force) {
+  
   while (ir[0] | ir[4]) {
     robotForward(force, force, force, force);
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -323,25 +315,16 @@ void robotTurnRight_90_degree_to_hall(int force) {
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
-//  while (!ir[3]) {
-//    robotTurnLeft(force, force, force, force);
-//    readIR();
-//    if (isStop) {
-//      robotStop();
-//      return;
-//    }
-//  }
-//  robotStop();
   while (!ir[2]) {
     frontLeft(force, force, force, force);
     readIR();
     if (isStop) {
       robotStop();
-      return;
+      //return;
     }
   }
   robotStop();
@@ -354,12 +337,13 @@ void readIR() {
   ir[3] = !(digitalRead(ir4));
   ir[4] = !(digitalRead(ir5));
   isStop = digitalRead(ir0);
+  isRoom = ir[0] & ir[4] & ir[1] & ir[2] & ir[3] & isTurn;
 }
 
 void robotMovingToRoom() {
   //int strongForce = 120; //100 for full batteries
   //int lightForce = 100; //80 for full batteries
-  if (ir[4]) {
+  if (ir[4] & (!isTurn)) {
     robotStop();
     delay(1000);
     countTurns += 1;
@@ -367,13 +351,14 @@ void robotMovingToRoom() {
     if (countTurns == turnsForEachRoom[idx]) {
       countTurns = 0;
       robotTurnRight_90_degree(lightForce);
+      isTurn = true;
     } else {
       while (ir[4]) {
         robotForward(lightForce, lightForce, lightForce, lightForce);
         readIR();
       }
     }
-  } else if (ir[0]) {
+  } else if (ir[0] & (!isTurn)) {
     robotStop();
     delay(1000);
     countTurns += 1;
@@ -381,6 +366,7 @@ void robotMovingToRoom() {
     if (countTurns == turnsForEachRoom[idx]) {
       countTurns = 0;
       robotTurnLeft_90_degree(lightForce);
+      isTurn = true;
     } else {
       while (ir[0]) {
         robotForward(lightForce, lightForce, lightForce, lightForce);
@@ -482,14 +468,15 @@ void runn() {
   switch (state) {
     case idle:
       robotStop();
-      //readIR();
-      if (mySerial.available()) readOrders();
-      if (numberOfOrdersLeft != 0) {
-        //numberOfOrdersLeft = numberOfOrders;
+      readIR();
+      //if (mySerial.available()) readOrders();
+      if (isStop) { //numberOfOrdersLeft != 0
+        numberOfOrdersLeft = numberOfOrders;
         turnsForEachRoom[0] = rooms[0];
         for (int i = 1; i < numberOfOrders; i++) turnsForEachRoom[i] = rooms[i] - rooms[i-1];
         rooms[numberOfOrders] = 0;
         countTurns = 0;
+        isTurn = false;
         delay(1000);
         //reportDestination(String(rooms[0]));
         state = moving_to_room;
@@ -497,25 +484,44 @@ void runn() {
       break;
     case moving_to_room:
       readIR();
-      if (!isStop) {
+      if (isStop) {
+        robotStop();
+      } else if (!isRoom) {
         robotMovingToRoom();
       } else {
         robotStop();
-        reportArrival();
+        //reportArrival();
         state = waiting;
       }
       break;
     case waiting: 
       delay(100);
       timer++;
-      if (timer == 200) {
+      if (timer == 50) {
         timer = 0;
+        isTurn = false;
+        while (ir[0] | ir[4]) {
+          readIR();
+          if (isStop) {
+            robotStop();
+          } else robotForward(force, force, force, force);
+        }
+        robotStop();
         while (!ir[3]) {
           robotTurnLeft(force, force, force, force);
           readIR();
         }
         robotStop();
-        //reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
+        while (ir[3]) {
+          robotTurnLeft(force, force, force, force);
+          readIR();
+        }
+        robotStop();   
+        while (!ir[3]) {
+          robotTurnLeft(force, force, force, force);
+          readIR();
+        }
+        robotStop();    
         state = moving_to_hall;
       } else {
         if (timer == 190) reportDestination(String(rooms[numberOfOrders - (numberOfOrdersLeft - 1)]));
@@ -524,45 +530,63 @@ void runn() {
       break;
     case moving_to_hall:
       readIR();
-      if (!isStop) {
-        if (ir[0] | ir[4]) {
-          robotStop();
-          delay(1000);
-          if (numberOfOrdersLeft > 1) {
-            if (lastTurn == LEFT) {
-              robotTurnLeft_90_degree_to_hall(force);
-            } else if (lastTurn == RIGHT) {
-              robotTurnRight_90_degree_to_hall(force);
-            }
-            numberOfOrdersLeft -= 1;
-            state = moving_to_room;
-          } else {
-            if (lastTurn == RIGHT) {
-              robotTurnLeft_90_degree_to_hall(force);
-            } else if (lastTurn == LEFT) {
-              robotTurnRight_90_degree_to_hall(force);
-            }
-            numberOfOrdersLeft -= 1;
-            state = moving_to_garage;
-          } 
+      if (isStop) {
+        robotStop();
+      } else if (ir[0] | ir[4]) {
+        robotStop();
+        delay(1000);
+        if (numberOfOrdersLeft > 1) {
+          if (lastTurn == LEFT) {
+            robotTurnLeft_90_degree_to_hall(force);
+          } else if (lastTurn == RIGHT) {
+            robotTurnRight_90_degree_to_hall(force);
+          }
+          numberOfOrdersLeft -= 1;
+          state = moving_to_room;
         } else {
-          robotMovingToHall();
-          state = moving_to_hall;
-        }
+          if (lastTurn == RIGHT) {
+            robotTurnLeft_90_degree_to_hall(force);
+          } else if (lastTurn == LEFT) {
+            robotTurnRight_90_degree_to_hall(force);
+          }
+          numberOfOrdersLeft -= 1;
+          isTurn = true;
+          state = moving_to_garage;
+        } 
       } else {
-          robotStop();
-          //delay(2000);
+        robotMovingToHall();
+        state = moving_to_hall;
       }
       break;
     case moving_to_garage:
       readIR();
       if (isStop) {
-        while (!ir[1]) {
-          robotTurnLeft(force - 10, force - 10, force - 10, force - 10);
+        robotStop();
+      } else if (isRoom) {
+        robotStop();
+        while (ir[0] | ir[4]) {
+          readIR();
+          if (isStop) {
+            robotStop();
+          } else robotForward(force, force, force, force);
+        }
+        robotStop();
+        while (!ir[3]) {
+          robotTurnLeft(force, force, force, force);
           readIR();
         }
         robotStop();
-        replyToCommand();
+        while (ir[3]) {
+          robotTurnLeft(force, force, force, force);
+          readIR();
+        }
+        robotStop();   
+        while ((!ir[3]) & (!ir[2])) {
+          robotTurnLeft(force, force, force, force);
+          readIR();
+        }
+        robotStop();
+        //replyToCommand();
         state = idle;
       } else {
         robotMovingToGarage();
