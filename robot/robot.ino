@@ -9,6 +9,8 @@
 #define IN3_front 8
 #define IN4_front 9
 
+#define buzzer 10
+
 #define ir1 A1
 #define ir2 A2
 #define ir3 A3
@@ -62,6 +64,7 @@ void setup()
   pinMode(IN2_front, OUTPUT);
   pinMode(IN3_front, OUTPUT);
   pinMode(IN4_front, OUTPUT);
+  pinMode(buzzer, OUTPUT);
   numberOfOrders = 3;
   numberOfOrdersLeft = 0;
   mySerial.begin(115200);
@@ -426,6 +429,13 @@ void reportDestination(String room) {
   mySerial.print("!" + room + "#");
 }
 
+void alarmBuzzer(int duration) {
+  digitalWrite(buzzer, HIGH);
+  delay(duration);
+  digitalWrite(buzzer, LOW);
+  delay(duration);
+}
+
 void readOrders() {
   String data = "";
   char c = char(mySerial.read());
@@ -479,6 +489,7 @@ void runn() {
         isTurn = false;
         delay(1000);
         //reportDestination(String(rooms[0]));
+        alarmBuzzer(500);
         state = moving_to_room;
       }
       break;
@@ -486,11 +497,15 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (!isRoom) {
         robotMovingToRoom();
       } else {
         robotStop();
         //reportArrival();
+        alarmBuzzer(200);
+        alarmBuzzer(200);
+        alarmBuzzer(200);
         state = waiting;
       }
       break;
@@ -532,6 +547,7 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (ir[0] | ir[4]) {
         robotStop();
         delay(1000);
@@ -562,6 +578,7 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (isRoom) {
         robotStop();
         while (ir[0] | ir[4]) {
@@ -587,6 +604,7 @@ void runn() {
         }
         robotStop();
         //replyToCommand();
+        alarmBuzzer(1000);
         state = idle;
       } else {
         robotMovingToGarage();
