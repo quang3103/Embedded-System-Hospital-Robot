@@ -354,7 +354,7 @@ void robotMovingToRoom() {
       isTurn = true;
     } else {
       while (ir[4]) {
-        robotForward(lightForce, lightForce, lightForce, lightForce);
+        robotForward(strongForce, strongForce, strongForce, strongForce);
         readIR();
       }
     }
@@ -369,7 +369,7 @@ void robotMovingToRoom() {
       isTurn = true;
     } else {
       while (ir[0]) {
-        robotForward(lightForce, lightForce, lightForce, lightForce);
+        robotForward(strongForce, strongForce, strongForce, strongForce);
         readIR();
       }
     }
@@ -468,9 +468,9 @@ void runn() {
   switch (state) {
     case idle:
       robotStop();
-      readIR();
-      //if (mySerial.available()) readOrders();
-      if (isStop) { //numberOfOrdersLeft != 0
+      //readIR();
+      if (mySerial.available()) readOrders();
+      if (numberOfOrdersLeft != 0) { //numberOfOrdersLeft != 0
         numberOfOrdersLeft = numberOfOrders;
         turnsForEachRoom[0] = rooms[0];
         for (int i = 1; i < numberOfOrders; i++) turnsForEachRoom[i] = rooms[i] - rooms[i-1];
@@ -490,14 +490,14 @@ void runn() {
         robotMovingToRoom();
       } else {
         robotStop();
-        //reportArrival();
+        reportArrival();
         state = waiting;
       }
       break;
     case waiting: 
       delay(100);
       timer++;
-      if (timer == 50) {
+      if (timer == 200) {
         timer = 0;
         isTurn = false;
         while (ir[0] | ir[4]) {
@@ -518,7 +518,7 @@ void runn() {
         }
         robotStop();   
         while (!ir[3]) {
-          robotTurnLeft(force, force, force, force);
+          robotTurnLeft(force - 10, force - 10, force - 10, force - 10);
           readIR();
         }
         robotStop();    
@@ -582,11 +582,11 @@ void runn() {
         }
         robotStop();   
         while ((!ir[3]) & (!ir[2])) {
-          robotTurnLeft(force, force, force, force);
+          robotTurnLeft(force - 10, force - 10, force - 10, force - 10);
           readIR();
         }
         robotStop();
-        //replyToCommand();
+        replyToCommand();
         state = idle;
       } else {
         robotMovingToGarage();
