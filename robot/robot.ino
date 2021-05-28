@@ -24,8 +24,8 @@
 #define TURN_INTERVAL 500
 #define FORWARD_INTERVAL 200
 
-#define strongForce 130
-#define lightForce 110
+#define strongForce 140
+#define lightForce 120
 
 #define idle 0
 #define moving_to_room 1
@@ -485,13 +485,13 @@ void readOrders() {
 }
 
 void runn() {
-  int force = lightForce;
+  int force = strongForce;
   switch (state) {
     case idle:
       robotStop();
-      //readIR();
-      if (mySerial.available()) readOrders();
-      if (numberOfOrdersLeft != 0) { //numberOfOrdersLeft != 0
+      readIR();
+      //if (mySerial.available()) readOrders();
+      if (isStop) { //numberOfOrdersLeft != 0
         numberOfOrdersLeft = numberOfOrders;
         turnsForEachRoom[0] = rooms[0];
         for (int i = 1; i < numberOfOrders; i++) turnsForEachRoom[i] = rooms[i] - rooms[i-1];
@@ -523,7 +523,7 @@ void runn() {
     case waiting: 
       delay(100);
       timer++;
-      if (timer == 200) {
+      if (timer == 20) {
         timer = 0;
         isTurn = false;
         while (ir[0] | ir[4]) {
@@ -550,7 +550,7 @@ void runn() {
         robotStop();    
         state = moving_to_hall;
       } else {
-        if (timer == 190) reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
+        if (timer == 190) reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft])); //new
         state = waiting;
       }
       break;
@@ -592,6 +592,7 @@ void runn() {
         alarmBuzzer(100);
       } else if (isRoom) {
         robotStop();
+        delay(1000);
         while (ir[0] | ir[4]) {
           readIR();
           if (isStop) {
@@ -609,7 +610,7 @@ void runn() {
           readIR();
         }
         robotStop();   
-        while ((!ir[3]) & (!ir[2])) {
+        while (!ir[2]) {
           robotTurnLeft(force - 10, force - 10, force - 10, force - 10);
           readIR();
         }
