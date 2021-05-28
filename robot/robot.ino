@@ -16,6 +16,8 @@
 #define ir5 A5
 #define ir0 A0
 
+#define buzzer 10
+
 #define BLACK_THRESHOLD
 
 #define RUN_INTERVAL 25
@@ -58,10 +60,21 @@ void setup()
   pinMode(IN2_back, OUTPUT);
   pinMode(IN3_back, OUTPUT);
   pinMode(IN4_back, OUTPUT);
+  
   pinMode(IN1_front, OUTPUT);
   pinMode(IN2_front, OUTPUT);
   pinMode(IN3_front, OUTPUT);
   pinMode(IN4_front, OUTPUT);
+  
+  pinMode(buzzer, OUTPUT);
+  
+  pinMode(ir0, INPUT);
+  pinMode(ir1, INPUT);
+  pinMode(ir2, INPUT);
+  pinMode(ir3, INPUT);
+  pinMode(ir4, INPUT);
+  pinMode(ir5, INPUT);
+  
   numberOfOrders = 3;
   numberOfOrdersLeft = 0;
   mySerial.begin(115200);
@@ -426,6 +439,14 @@ void reportDestination(String room) {
   mySerial.print("!" + room + "#");
 }
 
+void alarmBuzzer(int duration) {
+  digitalWrite(buzzer, HIGH);
+  delay(duration);
+  digitalWrite(buzzer, LOW);
+  delay(duration);
+}
+
+
 void readOrders() {
   String data = "";
   char c = char(mySerial.read());
@@ -479,6 +500,7 @@ void runn() {
         isTurn = false;
         delay(1000);
         //reportDestination(String(rooms[0]));
+        alarmBuzzer(500);
         state = moving_to_room;
       }
       break;
@@ -491,6 +513,10 @@ void runn() {
       } else {
         robotStop();
         reportArrival();
+        numberOfOrdersLeft -= 1; //new
+        alarmBuzzer(200);
+        alarmBuzzer(200);
+        alarmBuzzer(200);
         state = waiting;
       }
       break;
@@ -524,7 +550,7 @@ void runn() {
         robotStop();    
         state = moving_to_hall;
       } else {
-        if (timer == 190) reportDestination(String(rooms[numberOfOrders - (numberOfOrdersLeft - 1)]));
+        if (timer == 190) reportDestination(String(rooms[numberOfOrders - numberOfOrdersLeft]));
         state = waiting;
       }
       break;
@@ -532,16 +558,17 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (ir[0] | ir[4]) {
         robotStop();
         delay(1000);
-        if (numberOfOrdersLeft > 1) {
+        if (numberOfOrdersLeft > 0) {
           if (lastTurn == LEFT) {
             robotTurnLeft_90_degree_to_hall(force);
           } else if (lastTurn == RIGHT) {
             robotTurnRight_90_degree_to_hall(force);
           }
-          numberOfOrdersLeft -= 1;
+          //numberOfOrdersLeft -= 1;
           state = moving_to_room;
         } else {
           if (lastTurn == RIGHT) {
@@ -549,7 +576,7 @@ void runn() {
           } else if (lastTurn == LEFT) {
             robotTurnRight_90_degree_to_hall(force);
           }
-          numberOfOrdersLeft -= 1;
+          //numberOfOrdersLeft -= 1;
           isTurn = true;
           state = moving_to_garage;
         } 
@@ -562,6 +589,7 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (isRoom) {
         robotStop();
         while (ir[0] | ir[4]) {
@@ -586,7 +614,9 @@ void runn() {
           readIR();
         }
         robotStop();
-        replyToCommand();
+        //replyToCommand();
+        reportArrival();
+        alarmBuzzer(1000);
         state = idle;
       } else {
         robotMovingToGarage();
