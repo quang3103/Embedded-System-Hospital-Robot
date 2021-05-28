@@ -508,6 +508,7 @@ void runn() {
       readIR();
       if (isStop) {
         robotStop();
+        alarmBuzzer(100);
       } else if (!isRoom) {
         robotMovingToRoom();
       } else {
